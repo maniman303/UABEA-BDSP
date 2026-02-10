@@ -40,6 +40,10 @@ namespace UABEAvalonia
         private MenuItem menuExpandSel;
         private MenuItem menuCollapseSel;
 
+        private string TypeName = string.Empty;
+
+        private bool IsTransform => TypeName.ToLower().StartsWith("transform");
+
         private SolidColorBrush PrimNameBrush
         {
             get
@@ -191,6 +195,7 @@ namespace UABEAvalonia
                 return;
             }
 
+            TypeName = baseField.TypeName;
             string baseItemString = $"{baseField.TypeName} {baseField.FieldName}";
             if (container.ClassId == (uint)AssetClassID.MonoBehaviour || container.ClassId < 0)
             {
@@ -343,6 +348,8 @@ namespace UABEAvalonia
                         baseItem.ItemsSource = new AvaloniaList<TreeViewItem>() { arrayIndexTreeItem };
                         item.ItemsSource = new AvaloniaList<TreeViewItem>() { baseItem };
                         SetTreeItemEvents(baseItem, cont.FileInstance, fromPathId, baseField);
+
+                        baseItem.IsExpanded = IsTransform;
                     }
                     else
                     {
@@ -450,6 +457,11 @@ namespace UABEAvalonia
                     TreeViewItem childTreeItem = CreateColorTreeItem(childField.TypeName, childField.FieldName, middle, value);
                     items.Add(childTreeItem);
 
+                    if ((treeItem.Header as string) == "GameObject Base" && childField.FieldName == "m_Name")
+                    {
+                        var eee = "hello";
+                    }
+
                     if (childField.Value != null && childField.Value.ValueType == AssetValueType.ManagedReferencesRegistry)
                     {
                         ManagedReferencesRegistry registry = childField.AsManagedReferencesRegistry;
@@ -529,6 +541,11 @@ namespace UABEAvalonia
                         childTreeItem.ItemsSource = new AvaloniaList<TreeViewItem> { dummyItem };
                         SetTreeItemEvents(childTreeItem, fromFile, fromPathId, childField);
                     }
+
+                    if (childField.FieldName == "m_GameObject")
+                    {
+                        childTreeItem.IsExpanded = IsTransform;
+                    }
                 }
             }
 
@@ -552,6 +569,8 @@ namespace UABEAvalonia
                     TreeViewItem dummyItem = CreateTreeItem("Loading...");
                     childTreeItem.ItemsSource = new AvaloniaList<TreeViewItem> { dummyItem };
                     SetPPtrEvents(childTreeItem, fromFile, pathId, cont);
+
+                    childTreeItem.IsExpanded = IsTransform;
                 }
             }
 
