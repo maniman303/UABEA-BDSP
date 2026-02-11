@@ -5,6 +5,7 @@ using Avalonia.Collections;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -126,16 +127,24 @@ namespace UABEAvalonia
 
         private async void FillTransformItems()
         {
+            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
+
             this.IsEnabled = false;
+            dataGrid.Opacity = 0.5;
+
+            int count = 0;
 
             foreach (var item in dataGridItems)
             {
                 if (item.TypeID == 4 && item.Name == "Unnamed asset")
                 {
                     await OpenViewDataWindow(item, false);
+
+                    await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
                 }
             }
 
+            dataGrid.Opacity = 1;
             this.IsEnabled = true;
         }
 
@@ -262,6 +271,8 @@ namespace UABEAvalonia
             List<AssetContainer> selectedConts = GetSelectedAssetsReplaced(gridItem == null ? null : [gridItem]);
             if (selectedConts.Count > 0)
             {
+                var isFinished = false;
+
                 DataWindow data = new DataWindow(this, Workspace, selectedConts[0], (name) =>
                 {
                     if (selectedGridItem.Name == "Unnamed asset")
@@ -269,6 +280,8 @@ namespace UABEAvalonia
                         selectedGridItem.Name = $"Unnamed | {name}";
                         selectedGridItem.Update("Name");
                     }
+
+                    isFinished = true;
 
                     return showWindow;
                 });
@@ -282,6 +295,18 @@ namespace UABEAvalonia
                         data.Show();
                     }
                     catch { }
+                }
+                else
+                {
+                    for (int i = 0; i < 10; i++)
+                    {
+                        if (isFinished)
+                        {
+                            return;
+                        }
+
+                        await Task.Delay(5);
+                    }
                 }
             }
         }
