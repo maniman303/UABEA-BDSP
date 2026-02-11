@@ -787,7 +787,7 @@ namespace UABEAvalonia
                 await OpenFiles([filePath]);
             }
 
-            if (!string.IsNullOrWhiteSpace(backupPath))
+            if (!string.IsNullOrWhiteSpace(backupPath) && File.Exists(filePath))
             {
                 await CloseAllFiles();
                 File.Delete(backupPath);
