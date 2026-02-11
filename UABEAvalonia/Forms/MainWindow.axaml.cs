@@ -779,6 +779,13 @@ namespace UABEAvalonia
 
                 await progressWindow.ShowDialog(this);
             }
+            else if (!string.IsNullOrWhiteSpace(backupPath))
+            {
+                await CloseAllFiles();
+                File.Move(backupPath, selectedFilePath);
+                backupPath = string.Empty;
+                await OpenFiles([filePath]);
+            }
 
             if (!string.IsNullOrWhiteSpace(backupPath))
             {
