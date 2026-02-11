@@ -23,6 +23,11 @@ namespace UABEAvalonia
 
             var dumper = new AssetImportExport();
             var token = dumper.DumpJsonAsset(null, baseField);
+            if (token == null)
+            {
+                return null;
+            }
+
             var gameObjectToken = token["m_GameObject"];
             if (gameObjectToken == null)
             {

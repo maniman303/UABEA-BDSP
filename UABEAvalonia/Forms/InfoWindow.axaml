@@ -35,6 +35,7 @@
         <MenuItem Header="Dependencies" HotKey="F6" InputGesture="F6" Name="menuDependencies" />
         <MenuItem Header="Scripts" HotKey="F7" InputGesture="F7" Name="menuScripts" />
         <MenuItem Header="Scene Hierarchy" HotKey="F8" InputGesture="F8" Name="menuHierarchy" />
+        <MenuItem Header="Scale Mesh Bones" HotKey="F9" InputGesture="F9" Name="menuMeshBoneScale" />
       </MenuItem>
     </Menu>
     <TextBlock Margin="10,32,10,0" VerticalAlignment="Top" Text="Assets" />

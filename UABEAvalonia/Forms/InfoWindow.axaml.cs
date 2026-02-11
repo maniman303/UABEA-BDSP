@@ -3,9 +3,12 @@ using AssetsTools.NET.Extra;
 using Avalonia;
 using Avalonia.Collections;
 using Avalonia.Controls;
+using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -15,7 +18,9 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using UABEAvalonia.Controls;
 using UABEAvalonia.Plugins;
+using Path = System.IO.Path;
 
 namespace UABEAvalonia
 {
@@ -68,6 +73,7 @@ namespace UABEAvalonia
             menuTypeTree.Click += MenuTypeTree_Click;
             menuDependencies.Click += MenuDependencies_Click;
             menuScripts.Click += MenuScripts_Click;
+            menuMeshBoneScale.Click += MenuMeshBoneScale_Click;
             dataGrid.DoubleTapped += BtnViewData_Click;
             btnViewData.Click += BtnViewData_Click;
             btnSceneView.Click += BtnSceneView_Click;
@@ -260,6 +266,64 @@ namespace UABEAvalonia
         private void MenuScripts_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
             OpenAssetsFileInfoWindow(AssetsFileInfoWindowStartTab.Script);
+        }
+
+        private async void MenuMeshBoneScale_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (await FailIfNothingSelected())
+            {
+                return;
+            }
+
+            var selectedMeshItems = GetSelectedGridItems().Where(x => x.TypeID == 43).ToList();
+
+            var selectedFiles = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
+            {
+                Title = "Open",
+                FileTypeFilter = new List<FilePickerFileType>()
+                {
+                    new FilePickerFileType("UABEA bone scale json") { Patterns = new List<string>() { "*.json" } }
+                }
+            });
+
+            string[] selectedFilePaths = FileDialogUtils.GetOpenFileDialogFiles(selectedFiles);
+            if (selectedFilePaths.Length == 0)
+            {
+                return;
+            }
+
+            var selectedFilePath = selectedFilePaths[0];
+            if (!File.Exists(selectedFilePath))
+            {
+                return;
+            }
+
+            JToken? json = null;
+            try
+            {
+                json = JToken.Parse(File.ReadAllText(selectedFilePath));
+            }
+            catch
+            {
+
+            }
+
+            if (json == null)
+            {
+                return;
+            }
+
+            this.IsEnabled = false;
+            dataGrid.Opacity = 0.5;
+
+            var scaler = new MeshBoneScaler(Workspace, dataGridItems.ToList());
+            foreach (var item in selectedMeshItems)
+            {
+                scaler.Process(item, json);
+            }
+
+            this.IsEnabled = true;
+            dataGrid.Opacity = 1;
         }
 
         private async void BtnViewData_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
