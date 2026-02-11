@@ -40,6 +40,7 @@ Many games are also now using addressables. You can tell if the bundle you're op
 - Transforms in asset browser will display a name of attached bone in its name.
 - Skinned meshes in asset browser will display a name of attached mesh in its name.
 - Added a new option in Asset browser -> Tools -> Scale mesh bones to mass scale BindPose of selected meshes with json.
+- Make compress more intuitive, with no need to constant close / open / rename files.
 
 ## Json for bone scale
 

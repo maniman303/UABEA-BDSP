@@ -83,7 +83,7 @@ namespace UABEAvalonia
             }
         }
 
-        async void OpenFiles(string[] files)
+        async Task OpenFiles(string[] files)
         {
             string selectedFile = files[0];
 
@@ -679,88 +679,112 @@ namespace UABEAvalonia
 
         private async Task AskForLocationAndCompress()
         {
-            if (BundleInst != null)
+            var bundleInst = BundleInst;
+
+            if (bundleInst == null)
             {
-                // temporary, maybe I should just write to a memory stream or smth
-                // edit: looks like uabe just asks you to open a file instead of
-                // using your currently opened one, so that may be the workaround
-                if (changesMade)
+                await MessageBoxUtil.ShowDialog(this, "Note", "Please open a bundle file before using compress.");
+                return;
+            }
+
+            var filePath = bundleInst.path;
+            if (changesMade && !changesUnsaved)
+            {
+                await AskForSave();
+                await CloseAllFiles();
+                await OpenFiles([filePath]);
+            }
+
+            // temporary, maybe I should just write to a memory stream or smth
+            // edit: looks like uabe just asks you to open a file instead of
+            // using your currently opened one, so that may be the workaround
+            if (changesMade)
+            {
+                string messageBoxTest;
+                if (changesUnsaved)
                 {
-                    string messageBoxTest;
-                    if (changesUnsaved)
-                    {
-                        messageBoxTest =
-                            "You've modified this file, but you still haven't saved this bundle file to disk yet. If you want \n" +
-                            "to compress the file with changes, please save this bundle now and open that file instead. \n" +
-                            "Click Ok to compress the file without changes.";
-                    }
-                    else
-                    {
-                        messageBoxTest =
-                            "You've modified this file, but only the old file before you made changes is open. If you want to compress the file with \n" +
-                            "changes, please close this bundle and open the file you saved. Click Ok to compress the file without changes.";
-                    }
-
-                    MessageBoxResult continueWithChanges = await MessageBoxUtil.ShowDialog(
-                        this, "Note", messageBoxTest,
-                        MessageBoxType.OKCancel);
-
-                    if (continueWithChanges == MessageBoxResult.Cancel)
-                    {
-                        return;
-                    }
+                    messageBoxTest =
+                        "You've modified this file, but you still haven't saved this bundle file to disk yet. If you want \n" +
+                        "to compress the file with changes, please save this bundle now and open that file instead. \n" +
+                        "Click Ok to compress the file without changes.";
+                }
+                else
+                {
+                    messageBoxTest =
+                        "You've modified this file, but only the old file before you made changes is open. If you want to compress the file with \n" +
+                        "changes, please close this bundle and open the file you saved. Click Ok to compress the file without changes.";
                 }
 
-                var selectedFile = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions()
-                {
-                    Title = "Save as..."
-                });
+                MessageBoxResult continueWithChanges = await MessageBoxUtil.ShowDialog(
+                    this, "Note", messageBoxTest,
+                    MessageBoxType.OKCancel);
 
-                string? selectedFilePath = FileDialogUtils.GetSaveFileDialogFile(selectedFile);
-                if (selectedFilePath == null)
-                    return;
-
-                if (Path.GetFullPath(selectedFilePath) == Path.GetFullPath(BundleInst.path))
+                if (continueWithChanges == MessageBoxResult.Cancel)
                 {
-                    await MessageBoxUtil.ShowDialog(this,
-                        "File in use", "Since this file is already open in UABEA, you must pick a new file name (sorry!)");
                     return;
                 }
+            }
 
-                const string lz4Option = "LZ4";
-                const string lzmaOption = "LZMA";
-                const string cancelOption = "Cancel";
-                string result = await MessageBoxUtil.ShowDialogCustom(
-                    this, "Note", "What compression method do you want to use?\nLZ4: Faster but larger size\nLZMA: Slower but smaller size",
-                    lz4Option, lzmaOption, cancelOption);
+            var selectedFile = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions()
+            {
+                Title = "Save as..."
+            });
 
-                AssetBundleCompressionType compType = result switch
+            string? selectedFilePath = FileDialogUtils.GetSaveFileDialogFile(selectedFile);
+            if (selectedFilePath == null)
+                return;
+
+            var backupPath = string.Empty;
+            if (Path.GetFullPath(selectedFilePath) == Path.GetFullPath(BundleInst.path))
+            {
+                //await MessageBoxUtil.ShowDialog(this,
+                //    "File in use", "Since this file is already open in UABEA, you must pick a new file name (sorry!)");
+                //return;
+
+                await CloseAllFiles();
+
+                backupPath = $"{selectedFilePath}_backup";
+                File.Move(selectedFilePath, backupPath);
+
+                await OpenFiles([backupPath]);
+            }
+
+            const string lz4Option = "LZ4";
+            const string lzmaOption = "LZMA";
+            const string cancelOption = "Cancel";
+            string result = await MessageBoxUtil.ShowDialogCustom(
+                this, "Note", "What compression method do you want to use?\nLZ4: Faster but larger size\nLZMA: Slower but smaller size",
+                lz4Option, lzmaOption, cancelOption);
+
+            AssetBundleCompressionType compType = result switch
+            {
+                lz4Option => AssetBundleCompressionType.LZ4,
+                lzmaOption => AssetBundleCompressionType.LZMA,
+                _ => AssetBundleCompressionType.None
+            };
+
+            if (compType != AssetBundleCompressionType.None)
+            {
+                ProgressWindow progressWindow = new ProgressWindow("Compressing...");
+
+                Thread thread = new Thread(new ParameterizedThreadStart(CompressBundle));
+                object[] threadArgs =
                 {
-                    lz4Option => AssetBundleCompressionType.LZ4,
-                    lzmaOption => AssetBundleCompressionType.LZMA,
-                    _ => AssetBundleCompressionType.None
-                };
-
-                if (compType != AssetBundleCompressionType.None)
-                {
-                    ProgressWindow progressWindow = new ProgressWindow("Compressing...");
-
-                    Thread thread = new Thread(new ParameterizedThreadStart(CompressBundle));
-                    object[] threadArgs =
-                    {
                         BundleInst,
                         selectedFilePath,
                         compType,
                         progressWindow.Progress
                     };
-                    thread.Start(threadArgs);
+                thread.Start(threadArgs);
 
-                    await progressWindow.ShowDialog(this);
-                }
+                await progressWindow.ShowDialog(this);
             }
-            else
+
+            if (!string.IsNullOrWhiteSpace(backupPath))
             {
-                await MessageBoxUtil.ShowDialog(this, "Note", "Please open a bundle file before using compress.");
+                await CloseAllFiles();
+                File.Delete(backupPath);
+                // await OpenFiles([filePath]);
             }
         }
 
