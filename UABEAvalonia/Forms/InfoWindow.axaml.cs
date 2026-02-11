@@ -132,15 +132,16 @@ namespace UABEAvalonia
             this.IsEnabled = false;
             dataGrid.Opacity = 0.5;
 
+            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
+
             int count = 0;
 
             foreach (var item in dataGridItems)
             {
                 if (item.TypeID == 4 && item.Name == "Unnamed asset")
                 {
-                    await OpenViewDataWindow(item, false);
-
-                    await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+                    LoadTransformBoneRetrieval(item);
+                    //return;
                 }
             }
 
@@ -253,20 +254,27 @@ namespace UABEAvalonia
 
         private async void BtnViewData_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            await OpenViewDataWindow();
+            var item = await OpenViewDataWindow();
+
+            if (item == null)
+            {
+                return;                
+            }
+
+            item.Update("Name");
         }
 
-        private async Task OpenViewDataWindow(AssetInfoDataGridItem? gridItem = null, bool showWindow = true)
+        private async Task<AssetInfoDataGridItem?> OpenViewDataWindow(AssetInfoDataGridItem? gridItem = null, bool showWindow = true)
         {
             if (gridItem == null)
             {
                 if (await FailIfNothingSelected())
-                    return;
+                    return null;
             }
 
             var selectedGridItem = gridItem ?? GetSelectedGridItem();
             if (!await WarnIfAssetSizeLarge(selectedGridItem))
-                return;
+                return null;
 
             List<AssetContainer> selectedConts = GetSelectedAssetsReplaced(gridItem == null ? null : [gridItem]);
             if (selectedConts.Count > 0)
@@ -302,13 +310,37 @@ namespace UABEAvalonia
                     {
                         if (isFinished)
                         {
-                            return;
+                            break;
                         }
 
                         await Task.Delay(5);
                     }
                 }
             }
+
+            return selectedGridItem;
+        }
+
+        private void LoadTransformBoneRetrieval(AssetInfoDataGridItem gridItem)
+        {
+            List<AssetContainer> selectedConts = GetSelectedAssetsReplaced([gridItem]);
+            if (!selectedConts.Any())
+            {
+                return;
+            }
+
+            var bone = new TransformBoneRetrieval();
+            bone.Init(Workspace, (name) =>
+            {
+                if (gridItem.Name == "Unnamed asset")
+                {
+                    gridItem.Name = $"Unnamed | {name}";
+                    gridItem.Update("Name");
+                }
+
+                return true;
+            });
+            bone.LoadComponent(selectedConts[0]);
         }
 
         private async void BtnSceneView_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
