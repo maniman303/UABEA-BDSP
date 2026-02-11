@@ -278,7 +278,7 @@ namespace UABEAvalonia
 
             if (!selectedMeshItems.Any())
             {
-                await MessageBoxUtil.ShowDialog(this, "Note", "Nothing to scale.");
+                await MessageBoxUtil.ShowDialog(this, "Mesh bone scale", "Nothing to scale.");
                 return;
             }
 
@@ -329,6 +329,8 @@ namespace UABEAvalonia
 
             this.IsEnabled = true;
             dataGrid.Opacity = 1;
+
+            await MessageBoxUtil.ShowDialog(this, "Mesh bone scale", "Operation completed.");
         }
 
         private async void BtnViewData_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
