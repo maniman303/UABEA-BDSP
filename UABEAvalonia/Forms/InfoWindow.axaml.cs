@@ -66,6 +66,7 @@ namespace UABEAvalonia
             menuTypeTree.Click += MenuTypeTree_Click;
             menuDependencies.Click += MenuDependencies_Click;
             menuScripts.Click += MenuScripts_Click;
+            dataGrid.DoubleTapped += BtnViewData_Click;
             btnViewData.Click += BtnViewData_Click;
             btnSceneView.Click += BtnSceneView_Click;
             btnExportRaw.Click += BtnExportRaw_Click;
@@ -221,18 +222,27 @@ namespace UABEAvalonia
 
         private async void BtnViewData_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
+            await OpenViewDataWindow();
+        }
+
+        private async Task OpenViewDataWindow(AssetInfoDataGridItem? gridItem = null, bool showWindow = true)
+        {
             if (await FailIfNothingSelected())
                 return;
 
-            AssetInfoDataGridItem gridItem = GetSelectedGridItem();
+            gridItem ??= GetSelectedGridItem();
             if (!await WarnIfAssetSizeLarge(gridItem))
                 return;
 
             List<AssetContainer> selectedConts = GetSelectedAssetsReplaced();
             if (selectedConts.Count > 0)
             {
-                DataWindow data = new DataWindow(this, Workspace, selectedConts[0]);
-                data.Show();
+                DataWindow data = new DataWindow(this, Workspace, selectedConts[0], gridItem);
+                
+                if (showWindow)
+                {
+                    data.Show();
+                }
             }
         }
 

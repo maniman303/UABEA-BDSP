@@ -41,6 +41,7 @@ namespace UABEAvalonia
         private MenuItem menuCollapseSel;
 
         private string TypeName = string.Empty;
+        private AssetInfoDataGridItem? gridItem;
 
         private bool IsTransform => TypeName.ToLower().StartsWith("transform");
 
@@ -166,10 +167,11 @@ namespace UABEAvalonia
             }
         }
 
-        public void Init(InfoWindow win, AssetWorkspace workspace)
+        public void Init(InfoWindow win, AssetWorkspace workspace, AssetInfoDataGridItem? gridItem = null)
         {
             this.workspace = workspace;
             this.win = win;
+            this.gridItem = gridItem;
             Reset();
         }
 
@@ -457,9 +459,16 @@ namespace UABEAvalonia
                     TreeViewItem childTreeItem = CreateColorTreeItem(childField.TypeName, childField.FieldName, middle, value);
                     items.Add(childTreeItem);
 
-                    if ((treeItem.Header as string) == "GameObject Base" && childField.FieldName == "m_Name")
+                    var item = gridItem;
+                    if ((treeItem.Header as string) == "GameObject Base" && childField.FieldName == "m_Name" && item != null)
                     {
-                        var eee = "hello";
+                        if (item.Name == "Unnamed asset" && childField.Value != null)
+                        {
+                            var newName = childField.Value.AsString;
+
+                            item.Name = $"Unnamed asset | {newName}";
+                            item.Update("Name");
+                        }
                     }
 
                     if (childField.Value != null && childField.Value.ValueType == AssetValueType.ManagedReferencesRegistry)

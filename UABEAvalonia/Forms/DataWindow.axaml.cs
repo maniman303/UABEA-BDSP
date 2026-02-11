@@ -14,6 +14,7 @@ namespace UABEAvalonia
     {
         private InfoWindow win;
         private AssetWorkspace workspace;
+        private AssetInfoDataGridItem? gridItem;
 
         public DataWindow()
         {
@@ -25,14 +26,15 @@ namespace UABEAvalonia
             Closing += DataWindow_Closing;
         }
 
-        public DataWindow(InfoWindow win, AssetWorkspace workspace, AssetContainer cont) : this()
+        public DataWindow(InfoWindow win, AssetWorkspace workspace, AssetContainer cont, AssetInfoDataGridItem? gridItem = null) : this()
         {
             this.win = win;
             this.workspace = workspace;
+            this.gridItem = gridItem;
 
             SetWindowTitle(workspace, cont);
 
-            treeView.Init(win, workspace);
+            treeView.Init(win, workspace, gridItem);
             treeView.LoadComponent(cont);
         }
 
