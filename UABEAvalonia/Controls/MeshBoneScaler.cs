@@ -63,6 +63,12 @@ namespace UABEAvalonia.Controls
             }
 
             var records = GetBoneScaleRecords(skinnedMesh, scaleJson);
+
+            //TODO: prepare new jtoken
+
+            //TODO: use importer
+
+            //TODO: replace
         }
 
         private Dictionary<int, ScaleRecord> GetBoneScaleRecords(AssetInfoDataGridItem skinnedMeshItem, JToken scaleJson)

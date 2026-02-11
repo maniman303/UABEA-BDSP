@@ -515,6 +515,28 @@ namespace UABEAvalonia
             }
         }
 
+        public byte[]? ImportJsonAsset(AssetTypeTemplateField tempField, JToken token, out string? exceptionMessage)
+        {
+            this.sr = sr;
+            using (MemoryStream ms = new MemoryStream())
+            {
+                aw = new AssetsFileWriter(ms);
+                aw.BigEndian = false;
+
+                try
+                {
+                    RecurseJsonImport(tempField, token);
+                    exceptionMessage = null;
+                }
+                catch (Exception ex)
+                {
+                    exceptionMessage = ex.Message;
+                    return null;
+                }
+                return ms.ToArray();
+            }
+        }
+
         private void RecurseJsonImport(AssetTypeTemplateField tempField, JToken token)
         {
             bool align = tempField.IsAligned;
