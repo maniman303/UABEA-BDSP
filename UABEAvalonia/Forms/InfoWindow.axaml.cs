@@ -14,6 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using UABEAvalonia.Plugins;
 
 namespace UABEAvalonia
@@ -286,24 +287,14 @@ namespace UABEAvalonia
 
         private void LoadTransformBoneRetrieval(AssetInfoDataGridItem gridItem)
         {
-            List<AssetContainer> selectedConts = GetSelectedAssetsReplaced([gridItem]);
-            if (!selectedConts.Any())
-            {
-                return;
-            }
-
             var bone = new TransformBoneRetrieval();
-            bone.Init(Workspace, (name) =>
-            {
-                if (gridItem.Name == "Unnamed asset")
-                {
-                    gridItem.Name = $"Unnamed | {name}";
-                    gridItem.Update("Name");
-                }
+            var boneName = bone.LoadNew(Workspace, gridItem, dataGridItems.ToList());
 
-                return true;
-            });
-            bone.LoadComponent(selectedConts[0]);
+            if (gridItem.Name == "Unnamed asset")
+            {
+                gridItem.Name = $"Unnamed | {boneName}";
+                gridItem.Update("Name");
+            }
         }
 
         private async void BtnSceneView_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

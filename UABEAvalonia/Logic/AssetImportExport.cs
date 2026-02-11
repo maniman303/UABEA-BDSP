@@ -176,11 +176,17 @@ namespace UABEAvalonia
             }
         }
 
-        public void DumpJsonAsset(StreamWriter sw, AssetTypeValueField baseField)
+        public JToken DumpJsonAsset(StreamWriter? sw, AssetTypeValueField baseField)
         {
             this.sw = sw;
             JToken jBaseField = RecurseJsonDump(baseField, false);
-            sw.Write(jBaseField.ToString());
+            
+            if (sw != null)
+            {
+                sw.Write(jBaseField.ToString());
+            }
+
+            return jBaseField;
         }
 
         private JToken RecurseJsonDump(AssetTypeValueField field, bool uabeFlavor)
