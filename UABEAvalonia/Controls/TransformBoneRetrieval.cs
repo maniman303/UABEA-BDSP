@@ -34,11 +34,6 @@ namespace UABEAvalonia
         private static SolidColorBrush ValueBrushDark = SolidColorBrush.Parse("#b5cea8");
         private static SolidColorBrush ValueBrushLight = SolidColorBrush.Parse("#5b2da8");
 
-        private MenuItem menuEditAsset;
-        private MenuItem menuVisitAsset;
-        private MenuItem menuExpandSel;
-        private MenuItem menuCollapseSel;
-
         private string TypeName = string.Empty;
         private DataWindow? dataWin;
         private Func<string, bool>? callback;
@@ -79,52 +74,6 @@ namespace UABEAvalonia
                 return ThemeHandler.UseDarkTheme
                     ? ValueBrushDark
                     : ValueBrushLight;
-            }
-        }
-
-        public TransformBoneRetrieval() : base()
-        {
-            menuEditAsset = new MenuItem() { Header = "Edit Asset" };
-            menuVisitAsset = new MenuItem() { Header = "Visit Asset" };
-            menuExpandSel = new MenuItem() { Header = "Expand Selection" };
-            menuCollapseSel = new MenuItem() { Header = "Collapse Selection" };
-
-            DoubleTapped += AssetDataTreeView_DoubleTapped;
-            menuExpandSel.Click += MenuExpandSel_Click;
-            menuCollapseSel.Click += MenuCollapseSel_Click;
-
-            ContextMenu = new ContextMenu();
-            ContextMenu.ItemsSource = new AvaloniaList<MenuItem>()
-            {
-                menuEditAsset,
-                menuVisitAsset,
-                menuExpandSel,
-                menuCollapseSel
-            };
-        }
-
-        private void AssetDataTreeView_DoubleTapped(object? sender, Avalonia.Input.TappedEventArgs e)
-        {
-            if (SelectedItem != null)
-            {
-                TreeViewItem item = (TreeViewItem)SelectedItem;
-                item.IsExpanded = !item.IsExpanded;
-            }
-        }
-
-        private void MenuExpandSel_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-        {
-            if (SelectedItem != null)
-            {
-                ExpandAllChildren((TreeViewItem)SelectedItem);
-            }
-        }
-
-        private void MenuCollapseSel_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-        {
-            if (SelectedItem != null)
-            {
-                CollapseAllChildren((TreeViewItem)SelectedItem);
             }
         }
 
@@ -176,52 +125,6 @@ namespace UABEAvalonia
 
             SetTreeItemEvents(baseItem, container.FileInstance, container.PathId, baseField);
             baseItem.IsExpanded = true;
-        }
-
-        public void ExpandAllChildren(TreeViewItem treeItem)
-        {
-            string? text = null;
-            if (treeItem.Header is string header)
-            {
-                text = header;
-            }
-            else if (treeItem.Header is TextBlock rtb)
-            {
-                text = rtb.Text;
-            }
-
-            if (text != "[view asset]")
-            {
-                treeItem.IsExpanded = true;
-
-                foreach (TreeViewItem treeItemChild in treeItem.Items)
-                {
-                    ExpandAllChildren(treeItemChild);
-                }
-            }
-        }
-
-        public void CollapseAllChildren(TreeViewItem treeItem)
-        {
-            string? text = null;
-            if (treeItem.Header is string header)
-            {
-                text = header;
-            }
-            else if (treeItem.Header is TextBlock rtb)
-            {
-                text = rtb.Text;
-            }
-
-            if (text != "[view asset]")
-            {
-                foreach (TreeViewItem treeItemChild in treeItem.Items)
-                {
-                    CollapseAllChildren(treeItemChild);
-                }
-
-                treeItem.IsExpanded = false;
-            }
         }
 
         private TreeViewItem CreateTreeItem(string text)
