@@ -33,3 +33,28 @@ Many games are also now using addressables. You can tell if the bundle you're op
 - [ImageSharp](https://github.com/SixLabors/ImageSharp) (Apache License 2.0)
 - [Fsb5Sharp](https://github.com/SamboyCoding/Fmod5Sharp) (MIT license)
 - [Font Awesome](https://fontawesome.com) (CC BY 4.0 license)
+
+## Changes in this fork
+
+- Double-clicking a row in asset browser will open a window for viewing data.
+- Transforms in asset browser will display a name of attached bone in its name.
+- Skinned meshes in asset browser will display a name of attached mesh in its name.
+- Added a new option in Asset browser -> Tools -> Scale mesh bones to mass scale BindPose of selected meshes with json.
+
+## Json for bone scale
+
+Example which will make left foot and leg smaller in width and depth
+```json
+{
+    "LFoot": {
+        "x": 0.5,
+        "y": 1,
+        "z": 0.5
+    },
+    "LLeg": {
+        "x": 0.5,
+        "y": 1,
+        "z": 0.5
+    }
+}
+```
