@@ -1,6 +1,9 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using AssetsTools.NET;
+using AvaloniaEdit;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -65,10 +68,22 @@ namespace UABEAvalonia.Controls
             var records = GetBoneScaleRecords(skinnedMesh, scaleJson);
 
             var modifiedToken = PrepareModifiedToken(item, records);
+            if (modifiedToken == null)
+            {
+                return;
+            }
 
-            //TODO: use importer
+            AssetImportExport importer = new AssetImportExport();
+            AssetTypeTemplateField tempField = workspace.GetTemplateField(item.assetContainer);
 
-            //TODO: replace
+            var bytes = importer.ImportJsonAsset(tempField, modifiedToken, out var exceptionMessage);
+            if (bytes == null)
+            {
+                return;
+            }
+
+            AssetsReplacer replacer = AssetImportExport.CreateAssetReplacer(item.assetContainer, bytes);
+            workspace.AddReplacer(item.assetContainer.FileInstance, replacer, new MemoryStream(bytes));
         }
 
         private JToken? PrepareModifiedToken(AssetInfoDataGridItem item, Dictionary<int, ScaleRecord> records)
@@ -104,6 +119,8 @@ namespace UABEAvalonia.Controls
                 return null;
             }
 
+            var isModified = false;
+
             for (int i = 0; i < jarray.Count; i++)
             {
                 if (!records.TryGetValue(i, out var record))
@@ -131,9 +148,11 @@ namespace UABEAvalonia.Controls
                 {
                     return null;
                 }
+
+                isModified = true;
             }
 
-            return token;
+            return isModified ? token : null;
         }
 
         private bool ModifyMatrixRow(JToken matrix, int row, float scale)
