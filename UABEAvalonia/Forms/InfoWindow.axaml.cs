@@ -115,6 +115,28 @@ namespace UABEAvalonia
             filteredOutTypeIds = new HashSet<AssetClassID>();
 
             ChangedAssetsDatas = new List<Tuple<AssetsFileInstance, byte[]>>();
+
+            this.Opened += Window_Opened;
+        }
+
+        private void Window_Opened(object? sender, EventArgs e)
+        {
+            FillTransformItems();
+        }
+
+        private async void FillTransformItems()
+        {
+            this.IsEnabled = false;
+
+            foreach (var item in dataGridItems)
+            {
+                if (item.TypeID == 4 && item.Name == "Unnamed asset")
+                {
+                    await OpenViewDataWindow(item, false);
+                }
+            }
+
+            this.IsEnabled = true;
         }
 
         private async void MenuAdd_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -227,21 +249,39 @@ namespace UABEAvalonia
 
         private async Task OpenViewDataWindow(AssetInfoDataGridItem? gridItem = null, bool showWindow = true)
         {
-            if (await FailIfNothingSelected())
+            if (gridItem == null)
+            {
+                if (await FailIfNothingSelected())
+                    return;
+            }
+
+            var selectedGridItem = gridItem ?? GetSelectedGridItem();
+            if (!await WarnIfAssetSizeLarge(selectedGridItem))
                 return;
 
-            gridItem ??= GetSelectedGridItem();
-            if (!await WarnIfAssetSizeLarge(gridItem))
-                return;
-
-            List<AssetContainer> selectedConts = GetSelectedAssetsReplaced();
+            List<AssetContainer> selectedConts = GetSelectedAssetsReplaced(gridItem == null ? null : [gridItem]);
             if (selectedConts.Count > 0)
             {
-                DataWindow data = new DataWindow(this, Workspace, selectedConts[0], gridItem);
+                DataWindow data = new DataWindow(this, Workspace, selectedConts[0], (name) =>
+                {
+                    if (selectedGridItem.Name == "Unnamed asset")
+                    {
+                        selectedGridItem.Name = $"Unnamed | {name}";
+                        selectedGridItem.Update("Name");
+                    }
+
+                    return showWindow;
+                });
+
+                data.Opacity = showWindow ? 1 : 0;
                 
                 if (showWindow)
                 {
-                    data.Show();
+                    try
+                    {
+                        data.Show();
+                    }
+                    catch { }
                 }
             }
         }
@@ -1130,6 +1170,7 @@ namespace UABEAvalonia
             {
                 AddDataGridItem(cont);
             }
+
             return dataGridItems;
         }
 
@@ -1176,6 +1217,7 @@ namespace UABEAvalonia
                 dataGridItems.Add(item);
             else
                 dataGridItems.Insert(0, item);
+
             return item;
         }
 
@@ -1207,9 +1249,9 @@ namespace UABEAvalonia
             return dataGrid.SelectedItems.Cast<AssetInfoDataGridItem>().ToList();
         }
 
-        private List<AssetContainer> GetSelectedAssetsReplaced()
+        private List<AssetContainer> GetSelectedAssetsReplaced(List<AssetInfoDataGridItem>? gridItems = null)
         {
-            List<AssetInfoDataGridItem> gridItems = GetSelectedGridItems();
+            gridItems ??= GetSelectedGridItems();
             List<AssetContainer> exts = new List<AssetContainer>();
             foreach (var gridItem in gridItems)
             {
