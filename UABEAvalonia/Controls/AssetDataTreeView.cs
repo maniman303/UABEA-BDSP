@@ -41,8 +41,6 @@ namespace UABEAvalonia
         private MenuItem menuCollapseSel;
 
         private string TypeName = string.Empty;
-        private DataWindow? dataWin;
-        private Func<string, bool>? callback;
 
         private bool IsTransform => TypeName.ToLower().StartsWith("transform");
 
@@ -168,12 +166,10 @@ namespace UABEAvalonia
             }
         }
 
-        public void Init(InfoWindow win, AssetWorkspace workspace, DataWindow? dataWin = null, Func<string, bool>? callback = null)
+        public void Init(InfoWindow win, AssetWorkspace workspace)
         {
             this.workspace = workspace;
             this.win = win;
-            this.dataWin = dataWin;
-            this.callback = callback;
             Reset();
         }
 
@@ -460,20 +456,6 @@ namespace UABEAvalonia
                 {
                     TreeViewItem childTreeItem = CreateColorTreeItem(childField.TypeName, childField.FieldName, middle, value);
                     items.Add(childTreeItem);
-
-                    
-                    if (IsTransform && (treeItem.Header as string) == "GameObject Base" && childField.FieldName == "m_Name")
-                    {
-                        var nameCallback = this.callback;
-
-                        if (nameCallback != null)
-                        {
-                            if (!nameCallback(childField.Value?.AsString ?? string.Empty) && dataWin != null)
-                            {
-                                dataWin.Close();
-                            }
-                        }
-                    }
 
                     if (childField.Value != null && childField.Value.ValueType == AssetValueType.ManagedReferencesRegistry)
                     {

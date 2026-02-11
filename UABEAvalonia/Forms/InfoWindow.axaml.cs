@@ -254,68 +254,31 @@ namespace UABEAvalonia
 
         private async void BtnViewData_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            var item = await OpenViewDataWindow();
-
-            if (item == null)
-            {
-                return;                
-            }
-
-            item.Update("Name");
+            await OpenViewDataWindow();
         }
 
-        private async Task<AssetInfoDataGridItem?> OpenViewDataWindow(AssetInfoDataGridItem? gridItem = null, bool showWindow = true)
+        private async Task<AssetInfoDataGridItem?> OpenViewDataWindow(AssetInfoDataGridItem? gridItem = null)
         {
             if (gridItem == null)
             {
                 if (await FailIfNothingSelected())
+                {
                     return null;
+                }
             }
 
             var selectedGridItem = gridItem ?? GetSelectedGridItem();
             if (!await WarnIfAssetSizeLarge(selectedGridItem))
+            {
                 return null;
+            }
 
             List<AssetContainer> selectedConts = GetSelectedAssetsReplaced(gridItem == null ? null : [gridItem]);
             if (selectedConts.Count > 0)
             {
-                var isFinished = false;
+                DataWindow data = new DataWindow(this, Workspace, selectedConts[0]);
 
-                DataWindow data = new DataWindow(this, Workspace, selectedConts[0], (name) =>
-                {
-                    if (selectedGridItem.Name == "Unnamed asset")
-                    {
-                        selectedGridItem.Name = $"Unnamed | {name}";
-                        selectedGridItem.Update("Name");
-                    }
-
-                    isFinished = true;
-
-                    return showWindow;
-                });
-
-                data.Opacity = showWindow ? 1 : 0;
-                
-                if (showWindow)
-                {
-                    try
-                    {
-                        data.Show();
-                    }
-                    catch { }
-                }
-                else
-                {
-                    for (int i = 0; i < 10; i++)
-                    {
-                        if (isFinished)
-                        {
-                            break;
-                        }
-
-                        await Task.Delay(5);
-                    }
-                }
+                data.Show();
             }
 
             return selectedGridItem;

@@ -14,7 +14,6 @@ namespace UABEAvalonia
     {
         private InfoWindow win;
         private AssetWorkspace workspace;
-        private Func<string, bool>? callback;
 
         public DataWindow()
         {
@@ -26,15 +25,14 @@ namespace UABEAvalonia
             Closing += DataWindow_Closing;
         }
 
-        public DataWindow(InfoWindow win, AssetWorkspace workspace, AssetContainer cont, Func<string, bool>? callback = null) : this()
+        public DataWindow(InfoWindow win, AssetWorkspace workspace, AssetContainer cont) : this()
         {
             this.win = win;
             this.workspace = workspace;
-            this.callback = callback;
 
             SetWindowTitle(workspace, cont);
 
-            treeView.Init(win, workspace, this, callback);
+            treeView.Init(win, workspace);
             treeView.LoadComponent(cont);
         }
 
