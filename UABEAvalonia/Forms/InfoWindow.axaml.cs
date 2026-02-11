@@ -270,12 +270,11 @@ namespace UABEAvalonia
 
         private async void MenuMeshBoneScale_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            if (await FailIfNothingSelected())
-            {
-                return;
-            }
-
             var selectedMeshItems = GetSelectedGridItems().Where(x => x.TypeID == 43).ToList();
+            if (!selectedMeshItems.Any())
+            {
+                selectedMeshItems = dataGridItems.Where(x => x.TypeID == 43).ToList();
+            }
 
             var selectedFiles = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
             {

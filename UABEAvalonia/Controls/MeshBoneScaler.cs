@@ -13,9 +13,9 @@ namespace UABEAvalonia.Controls
         {
             public string? BoneName { get; set; }
             public int BoneIndex { get; set; }
-            public double X { get; set; }
-            public double Y { get; set; }
-            public double Z { get; set; }
+            public float X { get; set; }
+            public float Y { get; set; }
+            public float Z { get; set; }
 
             public static ScaleRecord FromJson(JToken json, string name, int index)
             {
@@ -25,9 +25,9 @@ namespace UABEAvalonia.Controls
 
                 return new ScaleRecord
                 {
-                    X = xToken?.Value<double>() ?? 1,
-                    Y = yToken?.Value<double>() ?? 1,
-                    Z = zToken?.Value<double>() ?? 1,
+                    X = xToken?.Value<float>() ?? 1,
+                    Y = yToken?.Value<float>() ?? 1,
+                    Z = zToken?.Value<float>() ?? 1,
                     BoneIndex = index,
                     BoneName = name,
                 };
@@ -64,11 +64,103 @@ namespace UABEAvalonia.Controls
 
             var records = GetBoneScaleRecords(skinnedMesh, scaleJson);
 
-            //TODO: prepare new jtoken
+            var modifiedToken = PrepareModifiedToken(item, records);
 
             //TODO: use importer
 
             //TODO: replace
+        }
+
+        private JToken? PrepareModifiedToken(AssetInfoDataGridItem item, Dictionary<int, ScaleRecord> records)
+        {
+            var baseField = workspace.GetBaseField(item.assetContainer);
+            if (baseField == null)
+            {
+                return null;
+            }
+
+            var dumper = new AssetImportExport();
+            var token = dumper.DumpJsonAsset(null, baseField);
+            if (token == null)
+            {
+                return null;
+            }
+
+            var bindPoseToken = token["m_BindPose"];
+            if (bindPoseToken == null)
+            {
+                return null;
+            }
+
+            var arrayBindPoseToken = bindPoseToken["Array"];
+            if (arrayBindPoseToken == null || arrayBindPoseToken.Type != JTokenType.Array)
+            {
+                return null;
+            }
+
+            var jarray = arrayBindPoseToken as JArray;
+            if (jarray == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < jarray.Count; i++)
+            {
+                if (!records.TryGetValue(i, out var record))
+                {
+                    continue;
+                }
+
+                var boneToken = jarray[i];
+                if (boneToken == null)
+                {
+                    continue;
+                }
+
+                if (!ModifyMatrixRow(boneToken, 0, record.X))
+                {
+                    return null;
+                }
+
+                if (!ModifyMatrixRow(boneToken, 1, record.Y))
+                {
+                    return null;
+                }
+
+                if (!ModifyMatrixRow(boneToken, 2, record.Z))
+                {
+                    return null;
+                }
+            }
+
+            return token;
+        }
+
+        private bool ModifyMatrixRow(JToken matrix, int row, float scale)
+        {
+            if (scale == 1)
+            {
+                return true;
+            }
+
+            try
+            {
+                var zero = matrix[$"e{row}0"]?.Parent as JProperty;
+                var one = matrix[$"e{row}1"]?.Parent as JProperty;
+                var two = matrix[$"e{row}2"]?.Parent as JProperty;
+                var three = matrix[$"e{row}3"]?.Parent as JProperty;
+
+                (zero?.Value as JValue)!.Value = zero.Value.Value<float>() * scale;
+                (one?.Value as JValue)!.Value = one.Value.Value<float>() * scale;
+                (two?.Value as JValue)!.Value = two.Value.Value<float>() * scale;
+                (three?.Value as JValue)!.Value = three.Value.Value<float>() * scale;
+            }
+            catch
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private Dictionary<int, ScaleRecord> GetBoneScaleRecords(AssetInfoDataGridItem skinnedMeshItem, JToken scaleJson)
