@@ -134,17 +134,17 @@ namespace UABEAvalonia.Controls
                     continue;
                 }
 
-                if (!ModifyMatrixRow(boneToken, 0, record.X))
+                if (!ModifyMatrixRow(boneToken, 0, record.Z))
                 {
                     return null;
                 }
 
-                if (!ModifyMatrixRow(boneToken, 1, record.Y))
+                if (!ModifyMatrixRow(boneToken, 1, record.X))
                 {
                     return null;
                 }
 
-                if (!ModifyMatrixRow(boneToken, 2, record.Z))
+                if (!ModifyMatrixRow(boneToken, 2, record.Y))
                 {
                     return null;
                 }

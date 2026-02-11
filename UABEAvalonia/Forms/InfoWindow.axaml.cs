@@ -276,6 +276,12 @@ namespace UABEAvalonia
                 selectedMeshItems = dataGridItems.Where(x => x.TypeID == 43).ToList();
             }
 
+            if (!selectedMeshItems.Any())
+            {
+                await MessageBoxUtil.ShowDialog(this, "Note", "Nothing to scale.");
+                return;
+            }
+
             var selectedFiles = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
             {
                 Title = "Open",
