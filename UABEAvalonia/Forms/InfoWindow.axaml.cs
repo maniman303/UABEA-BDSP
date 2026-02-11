@@ -321,16 +321,20 @@ namespace UABEAvalonia
             this.IsEnabled = false;
             dataGrid.Opacity = 0.5;
 
+            int count = 0;
             var scaler = new MeshBoneScaler(Workspace, dataGridItems.ToList());
             foreach (var item in selectedMeshItems)
             {
-                scaler.Process(item, json);
+                if (scaler.Process(item, json))
+                {
+                    count++;
+                }
             }
 
             this.IsEnabled = true;
             dataGrid.Opacity = 1;
 
-            await MessageBoxUtil.ShowDialog(this, "Mesh bone scale", "Operation completed.");
+            await MessageBoxUtil.ShowDialog(this, "Mesh bone scale", $"Operation completed.\nModified {count} file{(count == 1 ? string.Empty : "s")}.");
         }
 
         private async void BtnViewData_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

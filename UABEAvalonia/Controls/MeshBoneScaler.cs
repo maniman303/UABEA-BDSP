@@ -46,23 +46,23 @@ namespace UABEAvalonia.Controls
             this.gridItems = gridItems;
         }
 
-        public void Process(AssetInfoDataGridItem item, JToken scaleJson)
+        public bool Process(AssetInfoDataGridItem item, JToken scaleJson)
         {
             if (item.TypeID != 43)
             {
-                return;
+                return false;
             }
 
             var meshName = GetItemName(item);
             if (meshName == null || string.IsNullOrWhiteSpace(meshName))
             {
-                return;
+                return false;
             }
 
             var skinnedMesh = gridItems.FirstOrDefault(x => x.TypeID == 137 && x.Name.Contains(meshName));
             if (skinnedMesh == null)
             {
-                return;
+                return false;
             }
 
             var records = GetBoneScaleRecords(skinnedMesh, scaleJson);
@@ -70,7 +70,7 @@ namespace UABEAvalonia.Controls
             var modifiedToken = PrepareModifiedToken(item, records);
             if (modifiedToken == null)
             {
-                return;
+                return false;
             }
 
             AssetImportExport importer = new AssetImportExport();
@@ -79,11 +79,13 @@ namespace UABEAvalonia.Controls
             var bytes = importer.ImportJsonAsset(tempField, modifiedToken, out var exceptionMessage);
             if (bytes == null)
             {
-                return;
+                return false;
             }
 
             AssetsReplacer replacer = AssetImportExport.CreateAssetReplacer(item.assetContainer, bytes);
             workspace.AddReplacer(item.assetContainer.FileInstance, replacer, new MemoryStream(bytes));
+
+            return true;
         }
 
         private JToken? PrepareModifiedToken(AssetInfoDataGridItem item, Dictionary<int, ScaleRecord> records)

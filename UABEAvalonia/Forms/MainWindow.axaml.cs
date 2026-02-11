@@ -165,7 +165,7 @@ namespace UABEAvalonia
 
                 if (AssetBundleUtil.IsBundleDataCompressed(bundleInst.file))
                 {
-                    AskLoadCompressedBundle(bundleInst);
+                    await AskLoadCompressedBundle(bundleInst);
                 }
                 else
                 {
@@ -737,10 +737,6 @@ namespace UABEAvalonia
             var backupPath = string.Empty;
             if (Path.GetFullPath(selectedFilePath) == Path.GetFullPath(BundleInst.path))
             {
-                //await MessageBoxUtil.ShowDialog(this,
-                //    "File in use", "Since this file is already open in UABEA, you must pick a new file name (sorry!)");
-                //return;
-
                 await CloseAllFiles();
 
                 backupPath = $"{selectedFilePath}_backup";
@@ -842,7 +838,7 @@ namespace UABEAvalonia
             }
         }
 
-        private async void AskLoadCompressedBundle(BundleFileInstance bundleInst)
+        private async Task AskLoadCompressedBundle(BundleFileInstance bundleInst)
         {
             string decompSize = FileUtils.GetFormattedByteSize(GetBundleDataDecompressedSize(bundleInst.file));
 
