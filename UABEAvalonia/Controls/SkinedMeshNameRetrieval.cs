@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace UABEAvalonia
 {
-    public class TransformBoneRetrieval
+    public class SkinedMeshNameRetrieval
     {
         public string? LoadName(AssetWorkspace workspace, AssetInfoDataGridItem gridItem, List<AssetInfoDataGridItem> gridItems)
         {
@@ -36,31 +36,31 @@ namespace UABEAvalonia
             }
 
             var mPathID = mPathIDToken.Value<long>();
-            var boneAssetItem = gridItems.FirstOrDefault(x => x.PathID == mPathID);
-            if (boneAssetItem == null)
+            var meshAssetItem = gridItems.FirstOrDefault(x => x.PathID == mPathID);
+            if (meshAssetItem == null)
             {
                 return null;
             }
 
-            var boneAssetBaseField = workspace.GetBaseField(boneAssetItem.assetContainer);
-            if (boneAssetBaseField == null)
+            var meshAssetBaseField = workspace.GetBaseField(meshAssetItem.assetContainer);
+            if (meshAssetBaseField == null)
             {
                 return null;
             }
 
-            var boneAssetToken = dumper.DumpJsonAsset(null, boneAssetBaseField);
-            if (boneAssetToken == null)
+            var meshAssetToken = dumper.DumpJsonAsset(null, meshAssetBaseField);
+            if (meshAssetToken == null)
             {
                 return null;
             }
 
-            var boneNameToken = boneAssetToken["m_Name"];
-            if (boneNameToken == null)
+            var meshNameToken = meshAssetToken["m_Name"];
+            if (meshNameToken == null)
             {
                 return null;
             }
 
-            var boneName = boneNameToken.Value<string>();
+            var boneName = meshNameToken.Value<string>();
             return boneName;
         }
     }

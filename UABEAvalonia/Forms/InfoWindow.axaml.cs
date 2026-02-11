@@ -123,10 +123,10 @@ namespace UABEAvalonia
 
         private void Window_Opened(object? sender, EventArgs e)
         {
-            FillTransformItems();
+            FillUnnamedAssetsNames();
         }
 
-        private async void FillTransformItems()
+        private async void FillUnnamedAssetsNames()
         {
             await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
 
@@ -139,10 +139,19 @@ namespace UABEAvalonia
 
             foreach (var item in dataGridItems)
             {
-                if (item.TypeID == 4 && item.Name == "Unnamed asset")
+                if (item.Name != "Unnamed asset")
                 {
-                    LoadTransformBoneRetrieval(item);
-                    //return;
+                    continue;
+                }
+
+                if (item.TypeID == 4)
+                {
+                    LoadTransformBoneName(item);
+                }
+
+                if (item.TypeID == 137)
+                {
+                    LoadSkinnedMeshName(item);
                 }
             }
 
@@ -285,14 +294,26 @@ namespace UABEAvalonia
             return selectedGridItem;
         }
 
-        private void LoadTransformBoneRetrieval(AssetInfoDataGridItem gridItem)
+        private void LoadTransformBoneName(AssetInfoDataGridItem gridItem)
         {
             var bone = new TransformBoneRetrieval();
-            var boneName = bone.LoadNew(Workspace, gridItem, dataGridItems.ToList());
+            var boneName = bone.LoadName(Workspace, gridItem, dataGridItems.ToList());
 
             if (gridItem.Name == "Unnamed asset")
             {
                 gridItem.Name = $"Unnamed | {boneName}";
+                gridItem.Update("Name");
+            }
+        }
+
+        private void LoadSkinnedMeshName(AssetInfoDataGridItem gridItem)
+        {
+            var mesh = new SkinedMeshNameRetrieval();
+            var meshName = mesh.LoadName(Workspace, gridItem, dataGridItems.ToList());
+
+            if (gridItem.Name == "Unnamed asset")
+            {
+                gridItem.Name = $"Unnamed | {meshName}";
                 gridItem.Update("Name");
             }
         }
