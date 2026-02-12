@@ -315,6 +315,10 @@ namespace UABEAvalonia
                     continue;
                 }
 
+                infoWindow.Close();
+                InfoWindow_Closing(infoWindow, new System.ComponentModel.CancelEventArgs(false));
+                changesUnsaved = true;
+
                 await AskForLocationAndSave(false);
                 await AskForLocationAndCompress(filePath, AssetBundleCompressionType.LZ4, "Memory");
             }
