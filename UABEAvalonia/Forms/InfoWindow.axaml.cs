@@ -124,22 +124,13 @@ namespace UABEAvalonia
 
             ChangedAssetsDatas = new List<Tuple<AssetsFileInstance, byte[]>>();
 
-            this.Opened += Window_Opened;
-        }
-
-        private void Window_Opened(object? sender, EventArgs e)
-        {
             FillUnnamedAssetsNames();
         }
 
-        private async void FillUnnamedAssetsNames()
+        private void FillUnnamedAssetsNames()
         {
-            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
-
             this.IsEnabled = false;
             dataGrid.Opacity = 0.5;
-
-            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
 
             int count = 0;
 
@@ -173,16 +164,25 @@ namespace UABEAvalonia
 
         private async void MenuSave_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            await SaveFile(false);
-            ClearModified();
-            Workspace.Modified = false;
+            await SaveChanges(false);
         }
 
         private async void MenuSaveAs_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            await SaveFile(true);
+            await SaveChanges(true);
+        }
+
+        public async Task<bool> SaveChanges(bool saveAs, bool showMessages = true)
+        {
+            if (!await SaveFile(saveAs, showMessages))
+            {
+                return false;
+            }
+
             ClearModified();
             Workspace.Modified = false;
+
+            return true;
         }
 
         private async void MenuCreatePackageFile_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -270,18 +270,6 @@ namespace UABEAvalonia
 
         private async void MenuMeshBoneScale_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            var selectedMeshItems = GetSelectedGridItems().Where(x => x.TypeID == 43).ToList();
-            if (!selectedMeshItems.Any())
-            {
-                selectedMeshItems = dataGridItems.Where(x => x.TypeID == 43).ToList();
-            }
-
-            if (!selectedMeshItems.Any())
-            {
-                await MessageBoxUtil.ShowDialog(this, "Mesh bone scale", "Nothing to scale.");
-                return;
-            }
-
             var selectedFiles = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
             {
                 Title = "Open",
@@ -291,15 +279,10 @@ namespace UABEAvalonia
                 }
             });
 
-            string[] selectedFilePaths = FileDialogUtils.GetOpenFileDialogFiles(selectedFiles);
-            if (selectedFilePaths.Length == 0)
+            var selectedFilePath = FileDialogUtils.GetOpenFileDialogFiles(selectedFiles).FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(selectedFilePath) || !File.Exists(selectedFilePath))
             {
-                return;
-            }
-
-            var selectedFilePath = selectedFilePaths[0];
-            if (!File.Exists(selectedFilePath))
-            {
+                await MessageBoxUtil.ShowDialog(this, "Scale Mesh Bones", "Invalid json file.");
                 return;
             }
 
@@ -315,11 +298,34 @@ namespace UABEAvalonia
 
             if (json == null)
             {
+                await MessageBoxUtil.ShowDialog(this, "Scale Mesh Bones", "Invalid json file.");
                 return;
             }
 
             this.IsEnabled = false;
             dataGrid.Opacity = 0.5;
+
+            var count = await ScaleMeshBones(json);
+
+            this.IsEnabled = true;
+            dataGrid.Opacity = 1;
+
+            await MessageBoxUtil.ShowDialog(this, "Scale Mesh Bones", $"Operation completed.\nModified {count} file{(count == 1 ? string.Empty : "s")}.");
+        }
+
+        public async Task<int> ScaleMeshBones(JToken json, bool showMessages = true)
+        {
+            var selectedMeshItems = GetSelectedGridItems().Where(x => x.TypeID == 43).ToList();
+            if (!selectedMeshItems.Any())
+            {
+                selectedMeshItems = dataGridItems.Where(x => x.TypeID == 43).ToList();
+            }
+
+            if (!selectedMeshItems.Any())
+            {
+                await MessageBoxUtil.ShowDialog(this, "Scale Mesh Bones", "Nothing to scale.");
+                return 0;
+            }
 
             int count = 0;
             var scaler = new MeshBoneScaler(Workspace, dataGridItems.ToList());
@@ -331,10 +337,7 @@ namespace UABEAvalonia
                 }
             }
 
-            this.IsEnabled = true;
-            dataGrid.Opacity = 1;
-
-            await MessageBoxUtil.ShowDialog(this, "Mesh bone scale", $"Operation completed.\nModified {count} file{(count == 1 ? string.Empty : "s")}.");
+            return count;
         }
 
         private async void BtnViewData_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -626,7 +629,7 @@ namespace UABEAvalonia
             }
         }
 
-        private async Task SaveFile(bool saveAs)
+        private async Task<bool> SaveFile(bool saveAs, bool showMessages = true)
         {
             var fileToReplacer = new Dictionary<AssetsFileInstance, List<AssetsReplacer>>();
             var changedFiles = Workspace.GetChangedFiles();
@@ -670,10 +673,15 @@ namespace UABEAvalonia
                     {
                         await MessageBoxUtil.ShowDialog(this,
                             "Write exception", "There was a problem while writing the file:\n" + ex.ToString());
+
+                        return false;
                     }
                 }
 
-                await MessageBoxUtil.ShowDialog(this, "Success", "File saved. To complete changes, exit this window and File->Save in bundle window.");
+                if (showMessages)
+                {
+                    await MessageBoxUtil.ShowDialog(this, "Success", "File saved. To complete changes, exit this window and File->Save in bundle window.");
+                }
             }
             else
             {
@@ -702,7 +710,7 @@ namespace UABEAvalonia
                             filePath = FileDialogUtils.GetSaveFileDialogFile(selectedFile);
 
                             if (filePath == null)
-                                return;
+                                return false;
 
                             if (Path.GetFullPath(filePath) == Path.GetFullPath(file.path))
                             {
@@ -751,6 +759,8 @@ namespace UABEAvalonia
                     {
                         await MessageBoxUtil.ShowDialog(this,
                             "Write exception", "There was a problem while writing the file:\n" + ex.ToString());
+
+                        return false;
                     }
                 }
 
@@ -766,6 +776,8 @@ namespace UABEAvalonia
                     }
                 }
             }
+
+            return true;
         }
 
         private void CloseFile()

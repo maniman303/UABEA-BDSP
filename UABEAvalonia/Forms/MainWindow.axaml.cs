@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,7 +19,7 @@ namespace UABEAvalonia
     {
         public BundleWorkspace Workspace { get; }
         public AssetsManager am { get => Workspace.am; }
-        public BundleFileInstance BundleInst { get => Workspace.BundleInst; }
+        public BundleFileInstance? BundleInst { get => Workspace.BundleInst; }
 
         //private Dictionary<string, BundleReplacer> newFiles;
         private bool changesUnsaved; // sets false after saving
@@ -49,6 +50,7 @@ namespace UABEAvalonia
             menuToggleDarkTheme.Click += MenuToggleDarkTheme_Click;
             menuToggleCpp2Il.Click += MenuToggleCpp2Il_Click;
             menuAbout.Click += MenuAbout_Click;
+            menuMassMeshBoneScale.Click += MenuMassMeshBoneScale_Click;
             btnExport.Click += BtnExport_Click;
             btnImport.Click += BtnImport_Click;
             btnRemove.Click += BtnRemove_Click;
@@ -83,7 +85,7 @@ namespace UABEAvalonia
             }
         }
 
-        async Task OpenFiles(string[] files)
+        async Task OpenFiles(string[] files, string? decompressType = null)
         {
             string selectedFile = files[0];
 
@@ -165,7 +167,7 @@ namespace UABEAvalonia
 
                 if (AssetBundleUtil.IsBundleDataCompressed(bundleInst.file))
                 {
-                    await AskLoadCompressedBundle(bundleInst);
+                    await AskLoadCompressedBundle(bundleInst, decompressType);
                 }
                 else
                 {
@@ -204,7 +206,7 @@ namespace UABEAvalonia
             if (selectedFilePaths.Length == 0)
                 return;
 
-            OpenFiles(selectedFilePaths);
+            await OpenFiles(selectedFilePaths);
         }
 
         private async void MenuLoadPackageFile_Click(object? sender, RoutedEventArgs e)
@@ -238,6 +240,88 @@ namespace UABEAvalonia
         {
             About about = new About();
             about.ShowDialog(this);
+        }
+
+        private async void MenuMassMeshBoneScale_Click(object? sender, RoutedEventArgs e)
+        {
+            var selectedFiles = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
+            {
+                Title = "Open assets or bundle file",
+                FileTypeFilter = new List<FilePickerFileType>()
+                {
+                    new FilePickerFileType("All files") { Patterns = new List<string>() { "*" } }
+                },
+                AllowMultiple = true
+            });
+
+            string[] selectedFilePaths = FileDialogUtils.GetOpenFileDialogFiles(selectedFiles);
+            if (selectedFilePaths.Length == 0)
+            {
+                await MessageBoxUtil.ShowDialog(this, "Mass Mesh Bone Scale", "Nothing to scale.");
+                return;
+            }
+
+            var selectedJsonFiles = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
+            {
+                Title = "Open",
+                FileTypeFilter = new List<FilePickerFileType>()
+                {
+                    new FilePickerFileType("UABEA bone scale json") { Patterns = new List<string>() { "*.json" } }
+                }
+            });
+
+            var selectedJsonFilePath = FileDialogUtils.GetOpenFileDialogFiles(selectedJsonFiles).FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(selectedJsonFilePath) || !File.Exists(selectedJsonFilePath))
+            {
+                await MessageBoxUtil.ShowDialog(this, "Mass Mesh Bone Scale", "Invalid json file.");
+                return;
+            }
+
+            JToken? json = null;
+            try
+            {
+                json = JToken.Parse(File.ReadAllText(selectedJsonFilePath));
+            }
+            catch
+            {
+
+            }
+
+            if (json == null)
+            {
+                await MessageBoxUtil.ShowDialog(this, "Mass Mesh Bone Scale", "Invalid json file.");
+                return;
+            }
+
+            int count = 0;
+            this.IsEnabled = false;
+
+            foreach (var filePath in selectedFilePaths)
+            {
+                await OpenFiles([filePath], "Memory");
+
+                var infoWindow = await GetInfoWindow();
+                if (infoWindow == null)
+                {
+                    await CloseAllFiles();
+                    continue;
+                }
+
+                count += await infoWindow.ScaleMeshBones(json);
+                var saveRes = await infoWindow.SaveChanges(false, false);
+                if (!saveRes)
+                {
+                    await CloseAllFiles();
+                    continue;
+                }
+
+                await AskForLocationAndSave(false);
+                await AskForLocationAndCompress(filePath, AssetBundleCompressionType.LZ4, "Memory");
+            }
+
+            this.IsEnabled = true;
+
+            await MessageBoxUtil.ShowDialog(this, "Mass Mesh Bone Scale", $"Operation completed.\nModified {count} file{(count == 1 ? string.Empty : "s")}.");
         }
 
         private async void MenuSave_Click(object? sender, RoutedEventArgs e)
@@ -345,59 +429,73 @@ namespace UABEAvalonia
 
         private async void BtnInfo_Click(object? sender, RoutedEventArgs e)
         {
-            if (BundleInst == null)
+            var infoWindow = await GetInfoWindow();
+            if (infoWindow == null)
+            {
+                //await MessageBoxUtil.ShowDialog(this,
+                //        "Error", "This doesn't seem to be a valid assets file, " +
+                //                 "although the asset is serialized. Maybe the " +
+                //                 "file got corrupted or is too new of a version?");
+
+                await MessageBoxUtil.ShowDialog(this,
+                        "Error", "This doesn't seem to be a valid assets file. " +
+                                 "If you want to export a non-assets file, " +
+                                 "use Export.");
+
                 return;
+            }
+
+            infoWindow.Closing += InfoWindow_Closing;
+            infoWindow.Show();
+            openInfoWindows.Add(infoWindow);
+        }
+
+        private async Task<InfoWindow?> GetInfoWindow()
+        {
+            var bundleInst = BundleInst;
+            if (bundleInst == null)
+            {
+                return null;
+            }
 
             BundleWorkspaceItem? item = (BundleWorkspaceItem?)comboBox.SelectedItem;
             if (item == null)
-                return;
+            {
+                return null;
+            }
 
             string name = item.Name;
 
-            AssetBundleFile bundleFile = BundleInst.file;
+            AssetBundleFile bundleFile = bundleInst.file;
 
-            Stream assetStream = item.Stream;
+            var assetStream = item.Stream;
 
             DetectedFileType fileType = FileTypeDetector.DetectFileType(new AssetsFileReader(assetStream), 0);
             assetStream.Position = 0;
 
-            if (fileType == DetectedFileType.AssetsFile)
+            if (fileType != DetectedFileType.AssetsFile)
             {
-                string assetMemPath = Path.Combine(BundleInst.path, name);
-                AssetsFileInstance fileInst = am.LoadAssetsFile(assetStream, assetMemPath, true);
-
-                if (BundleInst != null && fileInst.parentBundle == null)
-                    fileInst.parentBundle = BundleInst;
-
-                if (!await LoadOrAskTypeData(fileInst))
-                    return;
-
-                // don't check for info open here
-                // we're assuming it's fine since two infos can
-                // be opened from a bundle without problems
-
-                InfoWindow info = new InfoWindow(am, new List<AssetsFileInstance> { fileInst }, true);
-                info.Closing += InfoWindow_Closing;
-                info.Show();
-                openInfoWindows.Add(info);
+                return null;
             }
-            else
+
+            string assetMemPath = Path.Combine(bundleInst.path, name);
+            AssetsFileInstance fileInst = am.LoadAssetsFile(assetStream, assetMemPath, true);
+
+            if (BundleInst != null && fileInst.parentBundle == null)
             {
-                if (item.IsSerialized)
-                {
-                    await MessageBoxUtil.ShowDialog(this,
-                        "Error", "This doesn't seem to be a valid assets file, " +
-                                 "although the asset is serialized. Maybe the " +
-                                 "file got corrupted or is too new of a version?");
-                }
-                else
-                {
-                    await MessageBoxUtil.ShowDialog(this,
-                        "Error", "This doesn't seem to be a valid assets file. " +
-                                 "If you want to export a non-assets file, " +
-                                 "use Export.");
-                }
+                fileInst.parentBundle = BundleInst;
             }
+
+            if (!await LoadOrAskTypeData(fileInst))
+            {
+                return null;
+            }
+
+            // don't check for info open here
+            // we're assuming it's fine since two infos can
+            // be opened from a bundle without problems
+
+            return new InfoWindow(am, new List<AssetsFileInstance> { fileInst }, true);
         }
 
         private async void BtnExportAll_Click(object? sender, RoutedEventArgs e)
@@ -677,10 +775,9 @@ namespace UABEAvalonia
             }
         }
 
-        private async Task AskForLocationAndCompress()
+        private async Task AskForLocationAndCompress(string? savePath = null, AssetBundleCompressionType compType = AssetBundleCompressionType.None, string? decompressType = null)
         {
             var bundleInst = BundleInst;
-
             if (bundleInst == null)
             {
                 await MessageBoxUtil.ShowDialog(this, "Note", "Please open a bundle file before using compress.");
@@ -692,7 +789,14 @@ namespace UABEAvalonia
             {
                 await AskForSave();
                 await CloseAllFiles();
-                await OpenFiles([filePath]);
+                await OpenFiles([filePath], decompressType ?? "Memory");
+            }
+
+            bundleInst = BundleInst;
+            if (bundleInst == null)
+            {
+                await MessageBoxUtil.ShowDialog(this, "Note", "Could not resolve bundle instance.");
+                return;
             }
 
             // temporary, maybe I should just write to a memory stream or smth
@@ -725,39 +829,55 @@ namespace UABEAvalonia
                 }
             }
 
-            var selectedFile = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions()
+            if (string.IsNullOrWhiteSpace(savePath))
             {
-                Title = "Save as..."
-            });
+                var selectedFile = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions()
+                {
+                    Title = "Save as..."
+                });
 
-            string? selectedFilePath = FileDialogUtils.GetSaveFileDialogFile(selectedFile);
-            if (selectedFilePath == null)
+                savePath = FileDialogUtils.GetSaveFileDialogFile(selectedFile);
+            }
+
+            if (savePath == null)
+            {
                 return;
+            }
 
             var backupPath = string.Empty;
-            if (Path.GetFullPath(selectedFilePath) == Path.GetFullPath(BundleInst.path))
+            if (Path.GetFullPath(savePath) == Path.GetFullPath(bundleInst.path))
             {
                 await CloseAllFiles();
 
-                backupPath = $"{selectedFilePath}_backup";
-                File.Move(selectedFilePath, backupPath);
+                backupPath = $"{savePath}_backup";
+                File.Move(savePath, backupPath);
 
-                await OpenFiles([backupPath]);
+                await OpenFiles([backupPath], decompressType ?? "Memory");
+
+                bundleInst = BundleInst;
+                if (bundleInst == null)
+                {
+                    await MessageBoxUtil.ShowDialog(this, "Note", "Could not resolve bundle instance.");
+                    return;
+                }
             }
 
-            const string lz4Option = "LZ4";
-            const string lzmaOption = "LZMA";
-            const string cancelOption = "Cancel";
-            string result = await MessageBoxUtil.ShowDialogCustom(
-                this, "Note", "What compression method do you want to use?\nLZ4: Faster but larger size\nLZMA: Slower but smaller size",
-                lz4Option, lzmaOption, cancelOption);
-
-            AssetBundleCompressionType compType = result switch
+            if (compType == AssetBundleCompressionType.None)
             {
-                lz4Option => AssetBundleCompressionType.LZ4,
-                lzmaOption => AssetBundleCompressionType.LZMA,
-                _ => AssetBundleCompressionType.None
-            };
+                const string lz4Option = "LZ4";
+                const string lzmaOption = "LZMA";
+                const string cancelOption = "Cancel";
+                string result = await MessageBoxUtil.ShowDialogCustom(
+                    this, "Note", "What compression method do you want to use?\nLZ4: Faster but larger size\nLZMA: Slower but smaller size",
+                    lz4Option, lzmaOption, cancelOption);
+
+                compType = result switch
+                {
+                    lz4Option => AssetBundleCompressionType.LZ4,
+                    lzmaOption => AssetBundleCompressionType.LZMA,
+                    _ => AssetBundleCompressionType.None
+                };
+            }
 
             if (compType != AssetBundleCompressionType.None)
             {
@@ -766,8 +886,8 @@ namespace UABEAvalonia
                 Thread thread = new Thread(new ParameterizedThreadStart(CompressBundle));
                 object[] threadArgs =
                 {
-                        BundleInst,
-                        selectedFilePath,
+                        bundleInst,
+                        savePath,
                         compType,
                         progressWindow.Progress
                     };
@@ -778,9 +898,9 @@ namespace UABEAvalonia
             else if (!string.IsNullOrWhiteSpace(backupPath))
             {
                 await CloseAllFiles();
-                File.Move(backupPath, selectedFilePath);
+                File.Move(backupPath, savePath);
                 backupPath = string.Empty;
-                await OpenFiles([filePath]);
+                await OpenFiles([filePath], decompressType);
             }
 
             if (!string.IsNullOrWhiteSpace(backupPath) && File.Exists(filePath))
@@ -838,18 +958,22 @@ namespace UABEAvalonia
             }
         }
 
-        private async Task AskLoadCompressedBundle(BundleFileInstance bundleInst)
+        private async Task AskLoadCompressedBundle(BundleFileInstance bundleInst, string? decompressType = null)
         {
             string decompSize = FileUtils.GetFormattedByteSize(GetBundleDataDecompressedSize(bundleInst.file));
 
             const string fileOption = "File";
             const string memoryOption = "Memory";
             const string cancelOption = "Cancel";
-            string result = await MessageBoxUtil.ShowDialogCustom(
-                this, "Note", "This bundle is compressed. Decompress to file or memory?\nSize: " + decompSize,
-                fileOption, memoryOption, cancelOption);
 
-            if (result == fileOption)
+            if (string.IsNullOrWhiteSpace(decompressType))
+            {
+                decompressType = await MessageBoxUtil.ShowDialogCustom(
+                    this, "Note", "This bundle is compressed. Decompress to file or memory?\nSize: " + decompSize,
+                    fileOption, memoryOption, cancelOption);
+            }
+
+            if (decompressType == fileOption)
             {
                 string? selectedFilePath;
                 while (true)
@@ -881,7 +1005,7 @@ namespace UABEAvalonia
 
                 DecompressToFile(bundleInst, selectedFilePath);
             }
-            else if (result == memoryOption)
+            else if (decompressType == memoryOption)
             {
                 // for lz4 block reading
                 if (bundleInst.file.DataIsCompressed)
