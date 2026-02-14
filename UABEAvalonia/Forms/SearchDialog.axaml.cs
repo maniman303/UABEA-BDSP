@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
+using System;
 
 namespace UABEAvalonia
 {
@@ -17,6 +18,13 @@ namespace UABEAvalonia
             btnOk.Click += BtnOk_Click;
             btnCancel.Click += BtnCancel_Click;
             boxName.KeyDown += BoxName_KeyDown;
+
+            Opened += OnOpened;
+        }
+
+        private void OnOpened(object? sender, EventArgs e)
+        {
+            boxName.Focus();
         }
 
         private void BtnOk_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
