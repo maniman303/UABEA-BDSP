@@ -4,6 +4,8 @@
 
 [Latest Nightly (Windows)](https://nightly.link/maniman303/UABEA-BDSP/actions/runs/21938848959/uabea-windows.zip)
 
+[![Build UABEA Windows](https://github.com/maniman303/UABEA-BDSP/actions/workflows/dotnet-desktop.yml/badge.svg)](https://github.com/maniman303/UABEA-BDSP/actions/workflows/dotnet-desktop.yml)
+
 ## UABEAvalonia
 
 Cross-platform Asset Bundle/Serialized File reader and writer. Originally based on (but not a fork of) [UABE](https://github.com/SeriousCache/UABE).
