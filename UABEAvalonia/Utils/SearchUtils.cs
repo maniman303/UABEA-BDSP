@@ -18,6 +18,32 @@ namespace UABEAvalonia
         // cheap * search check
         public static bool WildcardMatches(string test, string pattern, bool caseSensitive = true)
         {
+            if (pattern == null)
+            {
+                return false;
+            }
+
+            var newPattern = pattern.Trim();
+            if (newPattern == string.Empty)
+            {
+                return false;
+            }
+
+            if (newPattern.StartsWith('*') && newPattern.EndsWith('*'))
+            {
+                return test.Contains(newPattern.Replace("*", string.Empty), caseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase);
+            }
+
+            if (newPattern.StartsWith('*'))
+            {
+                return test.StartsWith(newPattern.Replace("*", string.Empty), caseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase);
+            }
+
+            if (newPattern.EndsWith('*'))
+            {
+                return test.EndsWith(newPattern.Replace("*", string.Empty), caseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase);
+            }
+
             RegexOptions options = 0;
             if (!caseSensitive)
                 options |= RegexOptions.IgnoreCase;
