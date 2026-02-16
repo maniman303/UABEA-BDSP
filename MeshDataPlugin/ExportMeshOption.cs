@@ -46,8 +46,9 @@ namespace MeshDataPlugin
             }
 
             var info = MeshDataInfo.GetFromAssetContainer(workspace, selected);
-            if (info == null)
+            if (info == null || info.Size == 0)
             {
+                await MessageBoxUtil.ShowDialog(win, "Export Mesh Data", "Nothing to export.");
                 return false;
             }
 

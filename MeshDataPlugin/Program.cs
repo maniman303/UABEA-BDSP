@@ -13,6 +13,7 @@ namespace MeshDataPlugin
                 [
                     new ExportMeshOption(),
                     new ImportMeshOption(),
+                    new MeshDumpReplacer(),
                 ]
             };
             return info;
