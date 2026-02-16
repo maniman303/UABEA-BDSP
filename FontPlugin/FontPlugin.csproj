@@ -24,6 +24,14 @@
       <HintPath>..\Libs\AssetsTools.NET.dll</HintPath>
     </Reference>
   </ItemGroup>
+
+  <PropertyGroup Condition="'$(PlatformTarget)' == 'x64'">
+	<BaseOutputPath>bin\x64\</BaseOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(PlatformTarget)' == 'x86'">
+	<BaseOutputPath>bin\x86\</BaseOutputPath>
+  </PropertyGroup>
   
   <!-- there seems to be no flag for checking if building  -->
   <!-- or publishing, so we just have two separate targets -->
