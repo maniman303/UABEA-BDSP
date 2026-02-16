@@ -25,13 +25,13 @@ jobs:
       uses: microsoft/setup-msbuild@v1.1
 
     - name: Build
-      run: msbuild UABEAvalonia.sln /restore /p:Configuration=Release
+      run: msbuild UABEAvalonia.sln /restore /p:Configuration=Release /p:Platform=x64
     
     - name: Remove unused platforms
-      run: Get-ChildItem -Path "UABEAvalonia\bin\Release\net10.0\runtimes" -Directory | Where-Object { $_.Name -notin @("win-x64", "win7-x64", "win") } | Remove-Item -Recurse -Force
+      run: Get-ChildItem -Path "UABEAvalonia\bin\x64\Release\net10.0\runtimes" -Directory | Where-Object { $_.Name -notin @("win-x64", "win7-x64", "win") } | Remove-Item -Recurse -Force
       
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
         name: uabea-windows
-        path: UABEAvalonia/bin/Release/net10.0
+        path: UABEAvalonia/bin/x64/Release/net10.0
