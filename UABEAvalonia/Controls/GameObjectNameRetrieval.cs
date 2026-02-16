@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace UABEAvalonia
 {
-    public class SkinedMeshNameRetrieval
+    public class GameObjectNameRetrieval
     {
         public string? LoadName(AssetWorkspace workspace, AssetInfoDataGridItem gridItem, List<AssetInfoDataGridItem> gridItems)
         {

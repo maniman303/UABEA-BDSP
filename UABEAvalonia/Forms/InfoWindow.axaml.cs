@@ -146,9 +146,9 @@ namespace UABEAvalonia
                     LoadTransformBoneName(item);
                 }
 
-                if (item.TypeID == 137)
+                if (item.TypeID == 137 || item.TypeID == 0x21 || item.TypeID == 0x17)
                 {
-                    LoadSkinnedMeshName(item);
+                    LoadGameObjectName(item);
                 }
             }
 
@@ -384,14 +384,14 @@ namespace UABEAvalonia
             }
         }
 
-        private void LoadSkinnedMeshName(AssetInfoDataGridItem gridItem)
+        private void LoadGameObjectName(AssetInfoDataGridItem gridItem)
         {
-            var mesh = new SkinedMeshNameRetrieval();
-            var meshName = mesh.LoadName(Workspace, gridItem, dataGridItems.ToList());
+            var retrieval = new GameObjectNameRetrieval();
+            var name = retrieval.LoadName(Workspace, gridItem, dataGridItems.ToList());
 
-            if (gridItem.Name == "Unnamed asset")
+            if (!string.IsNullOrWhiteSpace(name) && gridItem.Name == "Unnamed asset")
             {
-                gridItem.Name = $"Unnamed | {meshName}";
+                gridItem.Name = $"Unnamed | {name}";
                 gridItem.Update("Name");
             }
         }
