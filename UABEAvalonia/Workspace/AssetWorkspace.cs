@@ -13,6 +13,7 @@ namespace UABEAvalonia
     public class AssetWorkspace
     {
         public AssetsManager am { get; }
+        public BundleWorkspace parent { get; }
         public bool fromBundle { get; }
 
         public List<AssetsFileInstance> LoadedFiles { get; }
@@ -43,9 +44,10 @@ namespace UABEAvalonia
 
         private bool setMonoTempGeneratorsYet;
 
-        public AssetWorkspace(AssetsManager am, bool fromBundle)
+        public AssetWorkspace(AssetsManager am, BundleWorkspace parent, bool fromBundle)
         {
             this.am = am;
+            this.parent = parent;
             this.fromBundle = fromBundle;
 
             LoadedFiles = new List<AssetsFileInstance>();

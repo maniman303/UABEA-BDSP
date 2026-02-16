@@ -1,0 +1,73 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<Platforms>AnyCPU;x64;x86</Platforms>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<UABEANativeConfig>unknown</UABEANativeConfig>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<PlatformTarget>x64</PlatformTarget>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Avalonia" Version="11.3.11" />
+		<PackageReference Include="Avalonia.Desktop" Version="11.3.11" />
+		<PackageReference Include="Avalonia.Diagnostics" Version="11.3.11" />
+		<PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.11" />
+		<PackageReference Include="Avalonia.Themes.Simple" Version="11.3.11" />
+		<PackageReference Include="Mono.Cecil" Version="0.11.6" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\UABEAvalonia\UABEAvalonia.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Reference Include="AssetsTools.NET">
+	    <HintPath>..\Libs\AssetsTools.NET.dll</HintPath>
+	  </Reference>
+	</ItemGroup>
+
+	<PropertyGroup Condition="'$(PlatformTarget)' == 'x64'">
+		<BaseOutputPath>bin\x64\</BaseOutputPath>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(PlatformTarget)' == 'x86'">
+		<BaseOutputPath>bin\x86\</BaseOutputPath>
+	</PropertyGroup>
+
+	<Target Name="BuildNativeAndSetConfig">
+		<PropertyGroup Condition="$([MSBuild]::IsOsPlatform(Windows)) AND ('$(Platform)' == 'x64' OR '$(Platform)' == 'AnyCPU')">
+			<UABEANativeConfig>win-x64</UABEANativeConfig>
+		</PropertyGroup>
+		<PropertyGroup Condition="$([MSBuild]::IsOsPlatform(Windows)) AND '$(Platform)' == 'x86'">
+			<UABEANativeConfig>win-x86</UABEANativeConfig>
+		</PropertyGroup>
+		<PropertyGroup Condition="$([MSBuild]::IsOsPlatform(Linux)) AND '$(LinuxUnameM)' == 'x86_64'">
+			<UABEANativeConfig>linux-x64</UABEANativeConfig>
+		</PropertyGroup>
+		<PropertyGroup Condition="$([MSBuild]::IsOsPlatform(Linux)) AND ('$(LinuxUnameM)' == 'i386' OR '$(LinuxUnameM)' == 'i686')">
+			<UABEANativeConfig>linux-x86</UABEANativeConfig>
+		</PropertyGroup>
+		
+		<Message Importance="High" Text="MESHDATAPLUGIN BUILD INFO" />
+		<Message Importance="High" Text="  ONWINDOWS: $([MSBuild]::IsOsPlatform(Windows))" />
+		<Message Importance="High" Text="  PLATFORM: $(Platform)" />
+		<Message Importance="High" Text="  CONFIG: $(UABEANativeConfig)" />
+		<Message Importance="High" Text="  PATH: $(SolutionDir)UABEAvalonia\$(OutputPath)" />
+	</Target>
+
+	<!-- build event -->
+	<Target Name="CopyLibrariesBuild" DependsOnTargets="BuildNativeAndSetConfig" AfterTargets="Build" Condition="'$(SolutionDir)' != '*Undefined*'">
+		<PropertyGroup>
+			<UABEABinDir>$(SolutionDir)UABEAvalonia\$(OutputPath)</UABEABinDir>
+		</PropertyGroup>
+
+		<!-- copy textureplugin -->
+		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(UABEABinDir)plugins" ContinueOnError="true" />
+	</Target>
+</Project>

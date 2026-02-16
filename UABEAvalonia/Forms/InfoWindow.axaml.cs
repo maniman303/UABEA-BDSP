@@ -98,9 +98,9 @@ namespace UABEAvalonia
             }
         }
 
-        public InfoWindow(AssetsManager assetsManager, List<AssetsFileInstance> assetsFiles, bool fromBundle) : this()
+        public InfoWindow(AssetsManager assetsManager, BundleWorkspace workspace, List<AssetsFileInstance> assetsFiles, bool fromBundle) : this()
         {
-            Workspace = new AssetWorkspace(assetsManager, fromBundle);
+            Workspace = new AssetWorkspace(assetsManager, workspace, fromBundle);
             Workspace.ItemUpdated += Workspace_ItemUpdated;
             Workspace.MonoTemplateLoadFailed += Workspace_MonoTemplateLoadFailed;
 

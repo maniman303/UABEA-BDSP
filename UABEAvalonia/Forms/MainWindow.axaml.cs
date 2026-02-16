@@ -149,7 +149,7 @@ namespace UABEAvalonia
                     return;
                 }
 
-                InfoWindow info = new InfoWindow(am, fileInstances, false);
+                InfoWindow info = new InfoWindow(am, Workspace, fileInstances, false);
                 info.Show();
                 info.Closing += (sender, _) =>
                 {
@@ -231,7 +231,7 @@ namespace UABEAvalonia
                 InstallerPackageFile emip = new InstallerPackageFile();
                 emip.Read(r);
 
-                LoadModPackageDialog dialog = new LoadModPackageDialog(emip, am);
+                LoadModPackageDialog dialog = new LoadModPackageDialog(emip, am, Workspace);
                 await dialog.ShowDialog(this);
             }
         }
@@ -499,7 +499,7 @@ namespace UABEAvalonia
             // we're assuming it's fine since two infos can
             // be opened from a bundle without problems
 
-            return new InfoWindow(am, new List<AssetsFileInstance> { fileInst }, true);
+            return new InfoWindow(am, Workspace, new List<AssetsFileInstance> { fileInst }, true);
         }
 
         private async void BtnExportAll_Click(object? sender, RoutedEventArgs e)

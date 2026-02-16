@@ -20,6 +20,7 @@ namespace UABEAvalonia
         private TreeViewItem affectedFiles;
         private InstallerPackageFile emip;
         private AssetsManager am;
+        private BundleWorkspace? workspace;
 
         private ObservableCollection<LoadModPackageTreeFileInfo> filesItems;
         private HashSet<string> fileNames;
@@ -38,10 +39,11 @@ namespace UABEAvalonia
             boxBaseFolder.TextChanged += BoxBaseFolder_TextChanged;
         }
 
-        public LoadModPackageDialog(InstallerPackageFile emip, AssetsManager am) : this()
+        public LoadModPackageDialog(InstallerPackageFile emip, AssetsManager am, BundleWorkspace workspace) : this()
         {
             this.emip = emip;
             this.am = am;
+            this.workspace = workspace;
 
             BuildTreeAssets();
         }
@@ -97,7 +99,7 @@ namespace UABEAvalonia
                 return;
             }
 
-            InfoWindow info = new InfoWindow(am, fileInsts, false);
+            InfoWindow info = new InfoWindow(am, workspace, fileInsts, false);
             foreach (KeyValuePair<AssetsFileInstance, List<AssetsReplacer>> kvp in replacerLists)
             {
                 AssetsFileInstance fileInst = kvp.Key;

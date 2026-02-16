@@ -25,6 +25,7 @@ namespace UABEAvalonia
             //generated events
             btnOk.Click += BtnOk_Click;
             btnCancel.Click += BtnCancel_Click;
+            boxPluginList.DoubleTapped += BtnOk_Click;
         }
 
         public PluginWindow(Window win, AssetWorkspace workspace, List<AssetContainer> selection, PluginManager plugLoader) : this()
