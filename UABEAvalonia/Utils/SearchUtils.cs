@@ -36,12 +36,12 @@ namespace UABEAvalonia
 
             if (newPattern.StartsWith('*'))
             {
-                return test.StartsWith(newPattern.Replace("*", string.Empty), caseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase);
+                return test.EndsWith(newPattern.Replace("*", string.Empty), caseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase);
             }
 
             if (newPattern.EndsWith('*'))
             {
-                return test.EndsWith(newPattern.Replace("*", string.Empty), caseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase);
+                return test.StartsWith(newPattern.Replace("*", string.Empty), caseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase);
             }
 
             RegexOptions options = 0;
