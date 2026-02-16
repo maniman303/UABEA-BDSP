@@ -12,6 +12,7 @@ namespace MeshDataPlugin
                 options =
                 [
                     new ExportMeshOption(),
+                    new ImportMeshOption(),
                 ]
             };
             return info;

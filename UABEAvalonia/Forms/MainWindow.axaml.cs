@@ -330,12 +330,12 @@ namespace UABEAvalonia
 
         private async void MenuSave_Click(object? sender, RoutedEventArgs e)
         {
-            await AskForLocationAndSave(false);
+            await AskForLocationAndSave(false, true);
         }
 
         private async void MenuSaveAs_Click(object? sender, RoutedEventArgs e)
         {
-            await AskForLocationAndSave(true);
+            await AskForLocationAndSave(true, true);
         }
 
         private async void MenuCompress_Click(object? sender, RoutedEventArgs e)
@@ -684,6 +684,12 @@ namespace UABEAvalonia
                     changesMade = true;
                 }
             }
+
+            if (Workspace.GetReplacers().Count > 0)
+            {
+                changesUnsaved = true;
+                changesMade = true;
+            }
         }
 
         private async Task<bool> LoadOrAskTypeData(AssetsFileInstance fileInst)
@@ -718,49 +724,57 @@ namespace UABEAvalonia
             return true;
         }
 
-        private async Task AskForLocationAndSave(bool saveAs)
+        private async Task AskForLocationAndSave(bool saveAs, bool showMessage = false)
         {
-            if (changesUnsaved && BundleInst != null)
+            if (!changesUnsaved || BundleInst == null)
             {
-                if (saveAs)
+                if (showMessage)
                 {
-                    var selectedFile = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions()
-                    {
-                        Title = "Save as..."
-                    });
-
-                    string? selectedFilePath = FileDialogUtils.GetSaveFileDialogFile(selectedFile);
-                    if (selectedFilePath == null)
-                        return;
-
-                    if (Path.GetFullPath(selectedFilePath) == Path.GetFullPath(BundleInst.path))
-                    {
-                        await MessageBoxUtil.ShowDialog(this,
-                            "File in use", "Please use File > Save to save over the currently open bundle.");
-                        return;
-                    }
-
-                    try
-                    {
-                        SaveBundle(BundleInst, selectedFilePath);
-                    }
-                    catch (Exception ex)
-                    {
-                        await MessageBoxUtil.ShowDialog(this,
-                            "Write exception", "There was a problem while writing the file:\n" + ex.ToString());
-                    }
+                    await MessageBoxUtil.ShowDialog(this,
+                        "Save", "Nothing to save.");
                 }
-                else
+
+                return;
+            }
+
+            if (saveAs)
+            {
+                var selectedFile = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions()
                 {
-                    try
-                    {
-                        SaveBundleOver(BundleInst);
-                    }
-                    catch (Exception ex)
-                    {
-                        await MessageBoxUtil.ShowDialog(this,
-                            "Write exception", "There was a problem while writing the file:\n" + ex.ToString());
-                    }
+                    Title = "Save as..."
+                });
+
+                string? selectedFilePath = FileDialogUtils.GetSaveFileDialogFile(selectedFile);
+                if (selectedFilePath == null)
+                    return;
+
+                if (Path.GetFullPath(selectedFilePath) == Path.GetFullPath(BundleInst.path))
+                {
+                    await MessageBoxUtil.ShowDialog(this,
+                        "File in use", "Please use File > Save to save over the currently open bundle.");
+                    return;
+                }
+
+                try
+                {
+                    SaveBundle(BundleInst, selectedFilePath);
+                }
+                catch (Exception ex)
+                {
+                    await MessageBoxUtil.ShowDialog(this,
+                        "Write exception", "There was a problem while writing the file:\n" + ex.ToString());
+                }
+            }
+            else
+            {
+                try
+                {
+                    SaveBundleOver(BundleInst);
+                }
+                catch (Exception ex)
+                {
+                    await MessageBoxUtil.ShowDialog(this,
+                        "Write exception", "There was a problem while writing the file:\n" + ex.ToString());
                 }
             }
         }
