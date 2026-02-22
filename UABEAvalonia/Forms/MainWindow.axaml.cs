@@ -851,7 +851,7 @@ namespace UABEAvalonia
             {
                 var selectedFile = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions()
                 {
-                    Title = "Save as..."
+                    Title = $"Save '{Path.GetFileName(bundleInst.path)}' as..."
                 });
 
                 savePath = FileDialogUtils.GetSaveFileDialogFile(selectedFile);
